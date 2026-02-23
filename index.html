@@ -3,31 +3,31 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CineMatch AI</title>
+<title>MovieFlow</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --primary: #6366f1;
-    --primary-light: #818cf8;
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --surface2: #334155;
-    --border: #475569;
-    --border-light: #64748b;
-    --text: #f1f5f9;
-    --text-dim: #cbd5e1;
-    --text-muted: #94a3b8;
-    --text-faint: #64748b;
+    --primary: #f43f5e;
+    --primary-light: #fb7185;
+    --bg: #0a0e27;
+    --surface: #1a1f3a;
+    --surface2: #2d3748;
+    --border: #4a5568;
+    --border-light: #718096;
+    --text: #e2e8f0;
+    --text-dim: #a0aec0;
+    --text-muted: #718096;
+    --text-faint: #4a5568;
   }
 
   html, body {
     min-height: 100vh;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     overflow-x: hidden;
   }
 
@@ -123,7 +123,7 @@
     border-bottom: 1px solid var(--border-light);
     color: var(--text);
     width: 100%;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 17px;
     padding: 12px 0;
     outline: none;
@@ -149,7 +149,7 @@
     color: var(--text-muted);
     padding: 9px 18px;
     cursor: pointer;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 14px;
     transition: all 0.25s;
     border-radius: 1px;
@@ -161,11 +161,11 @@
   .cta-wrap { text-align: center; margin-top: 52px; }
 
   .cta-btn {
-    background: var(--gold);
+    background: var(--primary);
     color: var(--bg);
     border: none;
     padding: 17px 56px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 15px;
     cursor: pointer;
     letter-spacing: 0.15em;
@@ -175,7 +175,7 @@
   }
 
   .cta-btn:hover:not(:disabled) {
-    background: var(--gold-light);
+    background: var(--primary-light);
     transform: translateY(-2px);
     box-shadow: 0 12px 40px rgba(184,115,51,0.3);
   }
@@ -210,7 +210,7 @@
     color: var(--text-muted);
     padding: 9px 22px;
     cursor: pointer;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 14px;
     letter-spacing: 0.05em;
     transition: all 0.2s;
@@ -468,10 +468,10 @@
 
   <!-- HEADER -->
   <div class="header" id="header">
-    <div class="header-eyebrow">◆ CineMatch AI ◆</div>
+    <div class="header-eyebrow">◆ MovieFlow ◆</div>
     <h1 class="header-title" id="header-title">
-      Discover Your Next<br>
-      <em>Favorite Movie</em>
+      Stream Your Next<br>
+      <em>Movie Experience</em>
     </h1>
     <div class="header-rule"></div>
   </div>
@@ -503,7 +503,7 @@
     <div id="error-msg" class="error-msg" style="display:none"></div>
 
     <div class="cta-wrap">
-      <button class="cta-btn" id="recommend-btn" disabled onclick="getRecommendations()">
+      <button class="cta-btn" id="recommend-btn" onclick="getRecommendations()">
         Recommend Films →
       </button>
     </div>
@@ -522,7 +522,7 @@
     <div class="detail-panel" id="detail-panel"></div>
   </div>
 
-  <div class="footer">CINEMATCH AI · POWERED BY AI</div>
+  <div class="footer">MOVIEFLOW · STREAM SMART</div>
 </div>
 
 <script>
@@ -673,7 +673,7 @@
 
   function showResults() {
     document.getElementById('form-section').style.display = 'none';
-    document.getElementById('header-title').innerHTML = 'Your<br><em>Movie Matches</em>';
+    document.getElementById('header-title').innerHTML = 'Your<br><em>Movie Stream</em>';
     document.getElementById('header').style.marginBottom = '40px';
     document.getElementById('container').classList.add('wide');
 
@@ -799,12 +799,11 @@
     document.getElementById('error-msg').style.display = 'none';
 
     const btn = document.getElementById('recommend-btn');
-    btn.disabled = true;
     btn.innerHTML = 'Recommend Films →';
 
     document.getElementById('results').style.display = 'none';
     document.getElementById('form-section').style.display = 'block';
-    document.getElementById('header-title').innerHTML = 'Discover Your Next<br><em>Favorite Movie</em>';
+    document.getElementById('header-title').innerHTML = 'Stream Your Next<br><em>Movie Experience</em>';
     document.getElementById('header').style.marginBottom = '56px';
     document.getElementById('container').classList.remove('wide');
   }
