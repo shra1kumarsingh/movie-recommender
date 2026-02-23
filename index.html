@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CineMatch AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #6366f1;
+    --primary-light: #818cf8;
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --border: #475569;
+    --border-light: #64748b;
+    --text: #f1f5f9;
+    --text-dim: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-faint: #64748b;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.18;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
+  }
+
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.65) 100%);
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 56px 28px 80px;
+    transition: max-width 0.5s ease;
+  }
+
+  .container.wide { max-width: 1020px; }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+    animation: fadeUp 0.8s ease;
+  }
+
+  .header-eyebrow {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 400;
+    line-height: 1.1;
+    color: #f5ede0;
+    text-shadow: 0 4px 60px rgba(184,115,51,0.2);
+  }
+
+  .header-title em {
+    font-style: italic;
+    color: var(--primary);
+  }
+
+  .header-rule {
+    width: 48px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 22px auto 0;
+  }
+
+  /* FORM */
+  .form { animation: fadeUp 0.6s ease; }
+
+  .field { margin-bottom: 40px; }
+
+  .field-label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.45em;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    opacity: 0.85;
+  }
+
+  .field input,
+  .field textarea {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text);
+    width: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 17px;
+    padding: 12px 0;
+    outline: none;
+    transition: border-color 0.3s;
+    resize: none;
+    line-height: 1.8;
+  }
+
+  .field input:focus,
+  .field textarea:focus { border-bottom-color: var(--primary); }
+  .field input::placeholder,
+  .field textarea::placeholder { color: var(--text-faint); }
+
+  .mood-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .mood-btn {
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: var(--text-muted);
+    padding: 9px 18px;
+    cursor: pointer;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    transition: all 0.25s;
+    border-radius: 1px;
+  }
+
+  .mood-btn:hover { border-color: #6b4f2a; color: var(--text-dim); }
+  .mood-btn.active { border-color: var(--primary); background: rgba(184,115,51,0.1); color: #f0e8dc; }
+
+  .cta-wrap { text-align: center; margin-top: 52px; }
+
+  .cta-btn {
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    padding: 17px 56px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+
+  .cta-btn:hover:not(:disabled) {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(184,115,51,0.3);
+  }
+
+  .cta-btn:disabled { background: #1e1810; color: var(--text-faint); cursor: not-allowed; }
+
+  .spinner {
+    display: inline-block;
+    width: 15px; height: 15px;
+    border: 2px solid #3a2a18;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 10px;
+  }
+
+  .error-msg { color: #c0392b; font-size: 14px; margin-bottom: 20px; text-align: center; }
+
+  /* RESULTS */
+  #results { display: none; animation: fadeUp 0.6s ease; }
+
+  .results-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 36px;
+  }
+
+  .back-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 9px 22px;
+    cursor: pointer;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+
+  .back-btn:hover { border-color: var(--primary); color: var(--text); }
+
+  /* THUMBNAIL STRIP */
+  .poster-strip {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .thumb {
+    width: 140px;
+    height: 210px;
+    position: relative;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 2px;
+    overflow: hidden;
+    transition: all 0.35s;
+    flex-shrink: 0;
+  }
+
+  .thumb:hover { border-color: #6b4f2a; transform: translateY(-4px); }
+  .thumb.active { border-color: var(--primary); box-shadow: 0 0 0 1px rgba(184,115,51,0.3), 0 16px 48px rgba(0,0,0,0.6); transform: translateY(-6px); }
+
+  .thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+  }
+
+  .thumb:hover img, .thumb.active img { transform: scale(1.05); }
+
+  .thumb-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(8,8,6,0.95) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  .thumb-num {
+    position: absolute;
+    top: 9px; left: 9px;
+    width: 24px; height: 24px;
+    background: rgba(184,115,51,0.9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    color: var(--bg);
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .thumb-rating {
+    position: absolute;
+    bottom: 36px; right: 9px;
+    font-size: 12px; color: var(--primary);
+    font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  }
+
+  .thumb-title {
+    position: absolute;
+    bottom: 10px; left: 9px; right: 9px;
+    font-size: 12px; color: #d0c0b0;
+    line-height: 1.3;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+  }
+
+  /* Fallback poster */
+  .poster-fallback {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #0a0806;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .poster-fallback .fb-icon { font-size: 28px; opacity: 0.3; margin-bottom: 10px; }
+  .poster-fallback .fb-title { font-size: 13px; color: var(--primary); opacity: 0.7; line-height: 1.4; }
+  .poster-fallback .fb-year { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+
+  /* DETAIL PANEL */
+  .detail-panel {
+    display: flex;
+    background: linear-gradient(135deg, #0e0c08 0%, #12100a 100%);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    border-radius: 2px;
+    margin-bottom: 28px;
+    min-height: 340px;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .detail-poster {
+    width: 220px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .detail-poster img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .detail-poster-fallback {
+    width: 100%; height: 100%;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #0a0806;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .detail-poster::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 50%, rgba(14,12,8,1) 100%);
+    pointer-events: none;
+  }
+
+  .detail-info {
+    flex: 1;
+    padding: 38px 44px 38px 36px;
+  }
+
+  .detail-meta {
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: var(--primary);
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 14px;
+  }
+
+  .detail-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(22px, 3vw, 34px);
+    font-weight: 400;
+    color: #f5ede0;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+
+  .detail-credits {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 26px;
+    line-height: 1.7;
+  }
+
+  .detail-credits span { color: var(--text-dim); }
+
+  .detail-rule { width: 40px; height: 1px; background: var(--border); margin-bottom: 24px; }
+
+  .detail-reason {
+    font-size: 16px;
+    color: #b8a890;
+    line-height: 1.9;
+    max-width: 520px;
+    margin-bottom: 30px;
+  }
+
+  .detail-tags {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .detail-rating {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--primary);
+    font-weight: 300;
+  }
+
+  .detail-rating sup {
+    font-size: 12px;
+    color: var(--text-faint);
+    letter-spacing: 0.2em;
+  }
+
+  .tag-divider { height: 24px; width: 1px; background: var(--border); }
+
+  .tag {
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .tag-lang { font-size: 12px; color: var(--text-faint); }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    margin-top: 72px;
+    font-size: 10px;
+    color: #1a1410;
+    letter-spacing: 0.4em;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 0.9; }
+  }
+
+  /* Loading skeleton */
+  .skeleton {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #0e0c08, #1a1610, #0e0c08);
+    background-size: 200% 200%;
+    animation: shimmer 1.8s ease infinite;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Responsive */
+  @media (max-width: 680px) {
+    .detail-panel { flex-direction: column; }
+    .detail-poster { width: 100%; height: 260px; }
+    .detail-poster::after { background: linear-gradient(to top, rgba(14,12,8,1) 0%, transparent 60%); }
+    .detail-info { padding: 28px 24px; }
+    .thumb { width: 100px; height: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="container">
+
+  <!-- HEADER -->
+  <div class="header" id="header">
+    <div class="header-eyebrow">◆ CineMatch AI ◆</div>
+    <h1 class="header-title" id="header-title">
+      Discover Your Next<br>
+      <em>Favorite Movie</em>
+    </h1>
+    <div class="header-rule"></div>
+  </div>
+
+  <!-- INPUT FORM -->
+  <div class="form" id="form-section">
+    <div class="field">
+      <label class="field-label">Films You Love</label>
+      <textarea id="fav-movies" placeholder="e.g. Blade Runner, In the Mood for Love, There Will Be Blood..." rows="3"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Tonight's Mood</label>
+      <div class="mood-grid" id="mood-grid">
+        <button class="mood-btn" data-mood="Chill">😌 Chill</button>
+        <button class="mood-btn" data-mood="Emotional">😢 Emotional</button>
+        <button class="mood-btn" data-mood="Funny">😂 Funny</button>
+        <button class="mood-btn" data-mood="Thrilled">😱 Thrilled</button>
+        <button class="mood-btn" data-mood="Thought-provoking">🤔 Thought-provoking</button>
+        <button class="mood-btn" data-mood="Inspired">🌟 Inspired</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Anything Else?</label>
+      <input type="text" id="extra-prefs" placeholder="e.g. prefer 90s films, no subtitles, under 2 hours..." />
+    </div>
+
+    <div id="error-msg" class="error-msg" style="display:none"></div>
+
+    <div class="cta-wrap">
+      <button class="cta-btn" id="recommend-btn" disabled onclick="getRecommendations()">
+        Recommend Films →
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="results-header">
+      <button class="back-btn" onclick="resetToForm()">← New Search</button>
+    </div>
+
+    <!-- Poster strip -->
+    <div class="poster-strip" id="poster-strip"></div>
+
+    <!-- Detail panel -->
+    <div class="detail-panel" id="detail-panel"></div>
+  </div>
+
+  <div class="footer">CINEMATCH AI · POWERED BY AI</div>
+</div>
+
+<script>
+  const OMDB_KEY = '7de90208';
+  let selectedMoods = [];
+  let recommendations = [];
+  let selectedIdx = 0;
+
+  // Sample movie data
+  const sampleMovies = [
+    {
+      title: "Blade Runner 2049",
+      year: 2017,
+      genre: "Sci-Fi Thriller",
+      mood: "Thought-provoking",
+      reason: "A visually stunning sequel that expands on the original's themes of humanity and artificial intelligence. Denis Villeneuve's direction creates a mesmerizing neo-noir atmosphere.",
+      director: "Denis Villeneuve",
+      rating: "8.0",
+      imdbId: "tt1856101",
+      cast: "Ryan Gosling, Harrison Ford, Ana de Armas",
+      runtime: "164 min",
+      language: "English"
+    },
+    {
+      title: "Parasite",
+      year: 2019,
+      genre: "Dark Comedy Thriller",
+      mood: "Thrilled",
+      reason: "Bong Joon-ho's masterful blend of social commentary and genre filmmaking creates an unforgettable experience that's both entertaining and deeply unsettling.",
+      director: "Bong Joon-ho",
+      rating: "8.5",
+      imdbId: "tt6751668",
+      cast: "Song Kang-ho, Lee Sun-kyun, Cho Yeo-jeong",
+      runtime: "132 min",
+      language: "Korean"
+    },
+    {
+      title: "Moonlight",
+      year: 2016,
+      genre: "Drama",
+      mood: "Emotional",
+      reason: "A beautifully crafted coming-of-age story that explores identity, masculinity, and connection with stunning cinematography and powerful performances.",
+      director: "Barry Jenkins",
+      rating: "7.4",
+      imdbId: "tt4975722",
+      cast: "Mahershala Ali, Naomie Harris, Trevante Rhodes",
+      runtime: "111 min",
+      language: "English"
+    },
+    {
+      title: "The Grand Budapest Hotel",
+      year: 2014,
+      genre: "Comedy Adventure",
+      mood: "Funny",
+      reason: "Wes Anderson's whimsical visual style and meticulous attention to detail create a delightful caper that's both charming and surprisingly poignant.",
+      director: "Wes Anderson",
+      rating: "8.1",
+      imdbId: "tt2278388",
+      cast: "Ralph Fiennes, F. Murray Abraham, Mathieu Amalric",
+      runtime: "99 min",
+      language: "English"
+    },
+    {
+      title: "Arrival",
+      year: 2016,
+      genre: "Sci-Fi Drama",
+      mood: "Inspired",
+      reason: "A intelligent and emotionally resonant first contact story that uses linguistics to explore themes of communication, time, and human connection.",
+      director: "Denis Villeneuve",
+      rating: "7.9",
+      imdbId: "tt2543164",
+      cast: "Amy Adams, Jeremy Renner, Forest Whitaker",
+      runtime: "116 min",
+      language: "English"
+    }
+  ];
+
+  // Mood button toggle
+  document.querySelectorAll('.mood-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('active');
+      const mood = btn.dataset.mood;
+      if (selectedMoods.includes(mood)) {
+        selectedMoods = selectedMoods.filter(m => m !== mood);
+      } else {
+        selectedMoods.push(mood);
+      }
+      updateCta();
+    });
+  });
+
+  // Input change
+  document.getElementById('fav-movies').addEventListener('input', updateCta);
+
+  function updateCta() {
+    const fav = document.getElementById('fav-movies').value.trim();
+    document.getElementById('recommend-btn').disabled = (!fav && selectedMoods.length === 0);
+  }
+
+  // Fetch poster from OMDB
+  async function fetchPoster(title, year, imdbId) {
+    const queries = [];
+    if (imdbId) queries.push(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_KEY}`);
+    queries.push(`https://www.omdbapi.com/?t=${encodeURIComponent(title)}&y=${year}&apikey=${OMDB_KEY}`);
+    queries.push(`https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_KEY}`);
+
+    for (const url of queries) {
+      try {
+        const r = await fetch(url);
+        const d = await r.json();
+        if (d.Poster && d.Poster !== 'N/A') return d.Poster;
+      } catch {}
+    }
+    return null;
+  }
+
+  function fallbackPosterHTML(title, year) {
+    const letter = (title || '?')[0].toUpperCase();
+    return `<div class="poster-fallback"><div class="fb-icon">🎬</div><div class="fb-title">${title}</div><div class="fb-year">${year}</div></div>`;
+  }
+
+  async function getRecommendations() {
+    const fav = document.getElementById('fav-movies').value.trim();
+    const extra = document.getElementById('extra-prefs').value.trim();
+
+    const btn = document.getElementById('recommend-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> Curating your list...`;
+
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'none';
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Use sample movies
+    recommendations = [...sampleMovies];
+    
+    // Add personalization
+    if (fav && fav.toLowerCase().includes('blade runner')) {
+      recommendations[0].reason = "Since you love Blade Runner, this sequel expands the universe with incredible visuals and deeper philosophical questions about what it means to be human.";
+    }
+    
+    console.log('Recommendations loaded:', recommendations);
+    
+    showResults();
+  }
+
+  function showResults() {
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('header-title').innerHTML = 'Your<br><em>Movie Matches</em>';
+    document.getElementById('header').style.marginBottom = '40px';
+    document.getElementById('container').classList.add('wide');
+
+    const resultsEl = document.getElementById('results');
+    resultsEl.style.display = 'block';
+
+    renderStrip();
+    selectFilm(0);
+  }
+
+  function renderStrip() {
+    const strip = document.getElementById('poster-strip');
+    strip.innerHTML = '';
+    
+    console.log('Rendering strip with recommendations:', recommendations.length);
+
+    recommendations.forEach((film, i) => {
+      console.log(`Creating thumbnail for: ${film.title}`);
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb' + (i === 0 ? ' active' : '');
+      thumb.setAttribute('data-idx', i);
+      
+      // Start with fallback poster, then try to load real poster
+      thumb.innerHTML = `
+        ${fallbackPosterHTML(film.title, film.year)}
+        <div class="thumb-overlay"></div>
+        <div class="thumb-num">${i + 1}</div>
+        <div class="thumb-rating">★${film.rating}</div>
+        <div class="thumb-title">${film.title}</div>
+      `;
+      
+      thumb.addEventListener('click', () => selectFilm(i));
+      strip.appendChild(thumb);
+
+      // Try to load real poster async
+      fetchPoster(film.title, film.year, film.imdbId).then(url => {
+        if (url) {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = film.title;
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+          
+          // Replace the fallback poster with real one
+          const fallback = thumb.querySelector('.poster-fallback');
+          if (fallback) {
+            img.onload = () => { fallback.replaceWith(img); };
+            img.onerror = () => { /* keep fallback */ };
+            // Start loading
+            img.src = url;
+          }
+        }
+      });
+    });
+  }
+
+  function selectFilm(idx) {
+    selectedIdx = idx;
+
+    // Update active thumb
+    document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+    const activeThumb = document.querySelector(`.thumb[data-idx="${idx}"]`);
+    if (activeThumb) activeThumb.classList.add('active');
+
+    // Render detail panel
+    const film = recommendations[idx];
+    const panel = document.getElementById('detail-panel');
+
+    panel.innerHTML = `
+      <div class="detail-poster" id="detail-poster-wrap">
+        <div class="detail-poster-fallback">
+          <div class="fb-icon">🎬</div>
+          <div class="fb-title" style="font-size:16px;color:#b87333">${film.title}</div>
+          <div class="fb-year" style="font-size:13px">${film.year}</div>
+        </div>
+      </div>
+      <div class="detail-info">
+        <div class="detail-meta">${film.genre} · ${film.year}${film.runtime ? ' · ' + film.runtime : ''}</div>
+        <h2 class="detail-title">${film.title}</h2>
+        <div class="detail-credits">
+          dir. <span>${film.director}</span>
+          ${film.cast ? ` &nbsp;·&nbsp; ${film.cast}` : ''}
+        </div>
+        <div class="detail-rule"></div>
+        <p class="detail-reason">${film.reason}</p>
+        <div class="detail-tags">
+          <div class="detail-rating">${film.rating}<sup>/10</sup></div>
+          <div class="tag-divider"></div>
+          <div class="tag">${film.mood}</div>
+          ${film.language && film.language !== 'English' ? `<div class="tag-divider"></div><div class="tag-lang">🌐 ${film.language}</div>` : ''}
+        </div>
+      </div>
+    `;
+
+    // Animate panel
+    panel.style.animation = 'none';
+    requestAnimationFrame(() => { panel.style.animation = 'fadeUp 0.4s ease'; });
+
+    // Try to load real poster
+    const posterWrap = document.getElementById('detail-poster-wrap');
+    fetchPoster(film.title, film.year, film.imdbId).then(url => {
+      if (url) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = film.title;
+        img.style.cssText = 'width:100%;height:100%;min-height:340px;object-fit:cover;display:block;';
+        img.onload = () => {
+          const fallback = posterWrap.querySelector('.detail-poster-fallback');
+          if (fallback) fallback.replaceWith(img);
+        };
+        img.onerror = () => { /* keep fallback */ };
+      }
+    });
+  }
+
+  function resetToForm() {
+    recommendations = [];
+    selectedMoods = [];
+    selectedIdx = 0;
+
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('fav-movies').value = '';
+    document.getElementById('extra-prefs').value = '';
+    document.getElementById('error-msg').style.display = 'none';
+
+    const btn = document.getElementById('recommend-btn');
+    btn.disabled = true;
+    btn.innerHTML = 'Recommend Films →';
+
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('form-section').style.display = 'block';
+    document.getElementById('header-title').innerHTML = 'Discover Your Next<br><em>Favorite Movie</em>';
+    document.getElementById('header').style.marginBottom = '56px';
+    document.getElementById('container').classList.remove('wide');
+  }
+</script>
+</body>
+</html>
